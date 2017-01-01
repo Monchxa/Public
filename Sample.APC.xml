@@ -1,0 +1,2425 @@
+﻿<?xml version="1.0" encoding="utf-8"?><ManagementPack ContentReadable="true" SchemaVersion="2.0" OriginalSchemaVersion="1.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <Manifest>
+    <Identity>
+      <ID>Sample.APC</ID>
+      <Version>1.0.0.0</Version>
+    </Identity>
+    <Name>Sample.APC</Name>
+    <References>
+      <Reference Alias="MicrosoftSystemCenterNetworkDeviceLibrary7085600">
+        <ID>Microsoft.SystemCenter.NetworkDevice.Library</ID>
+        <Version>7.0.8560.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="SCDW">
+        <ID>Microsoft.SystemCenter.DataWarehouse.Library</ID>
+        <Version>7.0.8427.1</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="NetworkLibrary">
+        <ID>System.NetworkManagement.Library</ID>
+        <Version>7.0.8560.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Performance">
+        <ID>System.Performance.Library</ID>
+        <Version>7.0.8427.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="NetworkMonitoring">
+        <ID>System.NetworkManagement.Monitoring</ID>
+        <Version>7.0.8560.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="MicrosoftSystemCenterInstanceGroupLibrary6172210">
+        <ID>Microsoft.SystemCenter.InstanceGroup.Library</ID>
+        <Version>7.5.8501.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="System">
+        <ID>System.Library</ID>
+        <Version>7.5.8501.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="SC">
+        <ID>Microsoft.SystemCenter.Library</ID>
+        <Version>7.0.8427.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Health">
+        <ID>System.Health.Library</ID>
+        <Version>7.0.8427.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+    </References>
+  </Manifest>
+  <TypeDefinitions>
+    <EntityTypes>
+      <ClassTypes>
+        <ClassType ID="Sample.APC.Device" Accessibility="Public" Abstract="false" Base="NetworkLibrary!System.NetworkManagement.Node" Hosted="false" Singleton="false" Extension="false" />
+        <ClassType ID="Sample.APC.UPS.Device" Accessibility="Public" Abstract="false" Base="NetworkLibrary!System.NetworkManagement.Node" Hosted="false" Singleton="false" Extension="false" />
+        <ClassType ID="Sample.APC.PDU.Device" Accessibility="Public" Abstract="false" Base="NetworkLibrary!System.NetworkManagement.Node" Hosted="false" Singleton="false" Extension="false" />
+        <ClassType ID="Sample.APC.Device.Group" Accessibility="Public" Abstract="false" Base="MicrosoftSystemCenterInstanceGroupLibrary6172210!Microsoft.SystemCenter.InstanceGroup" Hosted="false" Singleton="true" Extension="false" />
+        <ClassType ID="Sample.APC.UPS.Device.Group" Accessibility="Public" Abstract="false" Base="MicrosoftSystemCenterInstanceGroupLibrary6172210!Microsoft.SystemCenter.InstanceGroup" Hosted="false" Singleton="true" Extension="false" />
+        <ClassType ID="Sample.APC.PDU.Device.Group" Accessibility="Public" Abstract="false" Base="MicrosoftSystemCenterInstanceGroupLibrary6172210!Microsoft.SystemCenter.InstanceGroup" Hosted="false" Singleton="true" Extension="false" />
+      </ClassTypes>
+    </EntityTypes>
+    <ModuleTypes>
+      <DataSourceModuleType ID="Sample.APC.Device.Discovery.DataSource" Accessibility="Internal" Batching="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="IntervalSeconds" type="xsd:integer" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+          <xsd:element minOccurs="0" name="SyncTime" type="xsd:string" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+          <xsd:element minOccurs="1" name="OID" type="xsd:string" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+          <xsd:element minOccurs="1" name="Class" type="xsd:string" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IntervalSeconds" Selector="$Config/IntervalSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="SyncTime" Selector="$Config/SyncTime$" ParameterType="string" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <DataSource ID="Scheduler" TypeID="System!System.Discovery.Scheduler">
+                <Scheduler>
+                  <SimpleReccuringSchedule>
+                    <Interval>$Config/IntervalSeconds$</Interval>
+                    <SyncTime>$Config/SyncTime$</SyncTime>
+                  </SimpleReccuringSchedule>
+                  <ExcludeDates />
+                </Scheduler>
+              </DataSource>
+              <ConditionDetection ID="MapToDiscovery" TypeID="System!System.Discovery.FilteredClassSnapshotDataMapper">
+                <Expression>
+                  <RegExExpression>
+                    <ValueExpression>
+                      <Value>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SystemObjectID$</Value>
+                    </ValueExpression>
+                    <Operator>MatchesRegularExpression</Operator>
+                    <Pattern>$Config/OID$</Pattern>
+                  </RegExExpression>
+                </Expression>
+                <ClassId>$Config/Class$</ClassId>
+                <InstanceSettings>
+                  <Settings>
+                    <Setting>
+                      <Name>$MPElement[Name='System!System.Entity']/DisplayName$</Name>
+                      <Value>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</Value>
+                    </Setting>
+                    <Setting>
+                      <Name>$MPElement[Name="NetworkLibrary!System.NetworkManagement.Node"]/DeviceKey$</Name>
+                      <Value>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/DeviceKey$</Value>
+                    </Setting>
+                  </Settings>
+                </InstanceSettings>
+              </ConditionDetection>
+            </MemberModules>
+            <Composition>
+              <Node ID="MapToDiscovery">
+                <Node ID="Scheduler" />
+              </Node>
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.Discovery.Data</OutputType>
+      </DataSourceModuleType>
+    </ModuleTypes>
+  </TypeDefinitions>
+  <Monitoring>
+    <Discoveries>
+      <Discovery ID="Sample.APC.Device.Discovery" Enabled="true" Target="NetworkLibrary!System.NetworkManagement.Node" ConfirmDelivery="false" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryClass TypeID="Sample.APC.Device" />
+        </DiscoveryTypes>
+        <DataSource ID="DS" TypeID="Sample.APC.Device.Discovery.DataSource">
+          <IntervalSeconds>300</IntervalSeconds>
+          <SyncTime />
+          <OID>.1.3.6.1.4.1.318.1.3</OID>
+          <Class>$MPElement[Name='Sample.APC.Device']$</Class>
+        </DataSource>
+      </Discovery>
+      <Discovery ID="Sample.APC.UPS.Device.Discovery" Enabled="true" Target="Sample.APC.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryClass TypeID="Sample.APC.UPS.Device" />
+        </DiscoveryTypes>
+        <DataSource ID="DS" TypeID="Sample.APC.Device.Discovery.DataSource">
+          <IntervalSeconds>14400</IntervalSeconds>
+          <SyncTime />
+          <OID>.1.3.6.1.4.1.318.1.3.2</OID>
+          <Class>$MPElement[Name='Sample.APC.UPS.Device']$</Class>
+        </DataSource>
+      </Discovery>
+      <Discovery ID="Sample.APC.PDU.Device.Discovery" Enabled="true" Target="Sample.APC.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryClass TypeID="Sample.APC.PDU.Device" />
+        </DiscoveryTypes>
+        <DataSource ID="DS" TypeID="Sample.APC.Device.Discovery.DataSource">
+          <IntervalSeconds>14400</IntervalSeconds>
+          <SyncTime />
+          <OID>.1.3.6.1.4.1.318.1.3.4</OID>
+          <Class>$MPElement[Name='Sample.APC.PDU.Device']$</Class>
+        </DataSource>
+      </Discovery>
+      <Discovery ID="Sample.APC.Device.Group.Discovery" Enabled="true" Target="Sample.APC.Device.Group" ConfirmDelivery="false" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryRelationship TypeID="MicrosoftSystemCenterInstanceGroupLibrary6172210!Microsoft.SystemCenter.InstanceGroupContainsEntities" />
+        </DiscoveryTypes>
+        <DataSource ID="GroupPopulationDataSource" TypeID="SC!Microsoft.SystemCenter.GroupPopulator">
+          <RuleId>$MPElement$</RuleId>
+          <GroupInstanceId>$MPElement[Name="Sample.APC.Device.Group"]$</GroupInstanceId>
+          <MembershipRules>
+            <MembershipRule>
+              <MonitoringClass>$MPElement[Name="Sample.APC.Device"]$</MonitoringClass>
+              <RelationshipClass>$MPElement[Name="MicrosoftSystemCenterInstanceGroupLibrary6172210!Microsoft.SystemCenter.InstanceGroupContainsEntities"]$</RelationshipClass>
+            </MembershipRule>
+          </MembershipRules>
+        </DataSource>
+      </Discovery>
+      <Discovery ID="Sample.APC.UPS.Device.Group.Discovery" Enabled="true" Target="Sample.APC.UPS.Device.Group" ConfirmDelivery="false" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryRelationship TypeID="MicrosoftSystemCenterInstanceGroupLibrary6172210!Microsoft.SystemCenter.InstanceGroupContainsEntities" />
+        </DiscoveryTypes>
+        <DataSource ID="GroupPopulationDataSource" TypeID="SC!Microsoft.SystemCenter.GroupPopulator">
+          <RuleId>$MPElement$</RuleId>
+          <GroupInstanceId>$MPElement[Name="Sample.APC.UPS.Device.Group"]$</GroupInstanceId>
+          <MembershipRules>
+            <MembershipRule>
+              <MonitoringClass>$MPElement[Name="Sample.APC.UPS.Device"]$</MonitoringClass>
+              <RelationshipClass>$MPElement[Name="MicrosoftSystemCenterInstanceGroupLibrary6172210!Microsoft.SystemCenter.InstanceGroupContainsEntities"]$</RelationshipClass>
+            </MembershipRule>
+          </MembershipRules>
+        </DataSource>
+      </Discovery>
+      <Discovery ID="Sample.APC.PDU.Device.Group.Discovery" Enabled="true" Target="Sample.APC.PDU.Device.Group" ConfirmDelivery="false" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryRelationship TypeID="MicrosoftSystemCenterInstanceGroupLibrary6172210!Microsoft.SystemCenter.InstanceGroupContainsEntities" />
+        </DiscoveryTypes>
+        <DataSource ID="GroupPopulationDataSource" TypeID="SC!Microsoft.SystemCenter.GroupPopulator">
+          <RuleId>$MPElement$</RuleId>
+          <GroupInstanceId>$MPElement[Name="Sample.APC.PDU.Device.Group"]$</GroupInstanceId>
+          <MembershipRules>
+            <MembershipRule>
+              <MonitoringClass>$MPElement[Name="Sample.APC.PDU.Device"]$</MonitoringClass>
+              <RelationshipClass>$MPElement[Name="MicrosoftSystemCenterInstanceGroupLibrary6172210!Microsoft.SystemCenter.InstanceGroupContainsEntities"]$</RelationshipClass>
+            </MembershipRule>
+          </MembershipRules>
+        </DataSource>
+      </Discovery>
+    </Discoveries>
+    <Rules>
+      <Rule ID="Sample.APC.UPS.Rule.upsAdvBatteryRunTimeRemaining" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.2.2.3.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsBasicBatteryStatus" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.2.1.1.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsBasicBatteryTimeOnBattery" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.2.1.2.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsAdvBatteryTemperature" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.2.2.2.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsAdvInputLineVoltage" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.3.2.1.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsAdvInputFrequency" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.3.2.4.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsAdvBatteryCapacity" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.2.2.1.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsAdvOutputVoltage" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.4.2.1.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsAdvOutputLoad" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.4.2.3.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsAdvOutputFrequency" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.4.2.2.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+      <Rule ID="Sample.APC.UPS.Rule.upsAdvOutputCurrent" Enabled="true" Target="Sample.APC.UPS.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.1.4.2.4.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+	  <Rule ID="Sample.APC.PDU.Rule.rPDULoadStatusLoadState" Enabled="false" Target="Sample.APC.PDU.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.12.2.3.1.1.3.1</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+	  <Rule ID="Sample.APC.PDU.Rule.rPDUPowerSupply1Status" Enabled="false" Target="Sample.APC.PDU.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.12.4.1.1.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+	  <Rule ID="Sample.APC.PDU.Rule.rPDUPowerSupply2Status" Enabled="false" Target="Sample.APC.PDU.Device" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>PerformanceCollection</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="NetworkLibrary!System.NetworkManagement.SnmpPerformanceDataSource">
+            <Interval>600</Interval>
+            <NoOfRetries>3</NoOfRetries>
+            <Timeout>500</Timeout>
+            <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+            <IP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</IP>
+            <Version>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</Version>
+            <SnmpVarBinds>
+              <SnmpVarBind>
+                <OID>1.3.6.1.4.1.318.1.1.12.4.1.2.0</OID>
+                <Syntax>0</Syntax>
+                <Value VariantType="8" />
+              </SnmpVarBind>
+            </SnmpVarBinds>
+            <ObjectName>Snmp Performance Object</ObjectName>
+            <CounterName>$Data/SnmpVarBinds/SnmpVarBind[1]/OID$</CounterName>
+          </DataSource>
+        </DataSources>
+        <WriteActions>
+          <WriteAction ID="WriteToDB" TypeID="SC!Microsoft.SystemCenter.CollectPerformanceData" />
+          <WriteAction ID="WriteToDW" TypeID="SCDW!Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData" />
+        </WriteActions>
+      </Rule>
+    </Rules>
+    <Monitors>
+      <UnitMonitor ID="Sample.APC.UPS.Monitor.upsBasicOutputStatus" Accessibility="Public" Enabled="true" Target="Sample.APC.UPS.Device" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="NetworkLibrary!System.NetworkManagement.SnmpProbe.2SingleEvent2StateMonitorType" ConfirmDelivery="false">
+        <Category>Custom</Category>
+        <AlertSettings AlertMessage="Sample.APC.UPS.Monitor.upsBasicOutputStatus_AlertMessageResourceID">
+          <AlertOnState>Warning</AlertOnState>
+          <AutoResolve>true</AutoResolve>
+          <AlertPriority>High</AlertPriority>
+          <AlertSeverity>Warning</AlertSeverity>
+          <AlertParameters>
+            <AlertParameter1>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</AlertParameter1>
+            <AlertParameter2>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/Location$</AlertParameter2>
+            <AlertParameter3>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PrimaryOwnerContact$</AlertParameter3>
+            <AlertParameter4>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</AlertParameter4>
+            <AlertParameter5>$Data/Context/SnmpVarBinds/SnmpVarBind[1]/Value$</AlertParameter5>
+          </AlertParameters>
+        </AlertSettings>
+        <OperationalStates>
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsBasicOutputStatus.Success" MonitorTypeStateID="SecondEventRaised" HealthState="Success" />
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsBasicOutputStatus.Error" MonitorTypeStateID="FirstEventRaised" HealthState="Warning" />
+        </OperationalStates>
+        <Configuration>
+          <FirstInterval>600</FirstInterval>
+          <FirstIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</FirstIP>
+          <FirstVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</FirstVersion>
+          <FirstSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.4.1.1.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </FirstSnmpVarBinds>
+          <FirstExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.4.1.1.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>NotEqual</Operator>
+              <ValueExpression>
+                <Value Type="Integer">2</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </FirstExpression>
+          <SecondInterval>600</SecondInterval>
+          <SecondIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</SecondIP>
+          <SecondVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</SecondVersion>
+          <SecondSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.4.1.1.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </SecondSnmpVarBinds>
+          <SecondExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.4.1.1.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>Equal</Operator>
+              <ValueExpression>
+                <Value Type="Integer">2</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </SecondExpression>
+          <NoOfRetries>3</NoOfRetries>
+          <Timeout>500</Timeout>
+          <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus" Accessibility="Public" Enabled="true" Target="Sample.APC.UPS.Device" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="NetworkLibrary!System.NetworkManagement.SnmpProbe.2SingleEvent2StateMonitorType" ConfirmDelivery="false">
+        <Category>Custom</Category>
+        <AlertSettings AlertMessage="Sample.APC.UPS.Monitor.upsBasicBatteryStatus_AlertMessageResourceID">
+          <AlertOnState>Warning</AlertOnState>
+          <AutoResolve>true</AutoResolve>
+          <AlertPriority>High</AlertPriority>
+          <AlertSeverity>Warning</AlertSeverity>
+          <AlertParameters>
+            <AlertParameter1>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</AlertParameter1>
+            <AlertParameter2>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/Location$</AlertParameter2>
+            <AlertParameter3>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PrimaryOwnerContact$</AlertParameter3>
+            <AlertParameter4>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</AlertParameter4>
+            <AlertParameter5>$Data/Context/SnmpVarBinds/SnmpVarBind[1]/Value$</AlertParameter5>
+          </AlertParameters>
+        </AlertSettings>
+        <OperationalStates>
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus.Success" MonitorTypeStateID="SecondEventRaised" HealthState="Success" />
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus.Error" MonitorTypeStateID="FirstEventRaised" HealthState="Warning" />
+        </OperationalStates>
+        <Configuration>
+          <FirstInterval>600</FirstInterval>
+          <FirstIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</FirstIP>
+          <FirstVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</FirstVersion>
+          <FirstSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.2.1.1.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </FirstSnmpVarBinds>
+          <FirstExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.2.1.1.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>NotEqual</Operator>
+              <ValueExpression>
+                <Value Type="Integer">2</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </FirstExpression>
+          <SecondInterval>600</SecondInterval>
+          <SecondIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</SecondIP>
+          <SecondVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</SecondVersion>
+          <SecondSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.2.1.1.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </SecondSnmpVarBinds>
+          <SecondExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.2.1.1.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>Equal</Operator>
+              <ValueExpression>
+                <Value Type="Integer">2</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </SecondExpression>
+          <NoOfRetries>3</NoOfRetries>
+          <Timeout>500</Timeout>
+          <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator" Accessibility="Public" Enabled="true" Target="Sample.APC.UPS.Device" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="NetworkLibrary!System.NetworkManagement.SnmpProbe.2SingleEvent2StateMonitorType" ConfirmDelivery="false">
+        <Category>Custom</Category>
+        <AlertSettings AlertMessage="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator_AlertMessageResourceID">
+          <AlertOnState>Warning</AlertOnState>
+          <AutoResolve>true</AutoResolve>
+          <AlertPriority>High</AlertPriority>
+          <AlertSeverity>Warning</AlertSeverity>
+          <AlertParameters>
+            <AlertParameter1>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</AlertParameter1>
+            <AlertParameter2>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/Location$</AlertParameter2>
+            <AlertParameter3>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PrimaryOwnerContact$</AlertParameter3>
+            <AlertParameter4>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</AlertParameter4>
+            <AlertParameter5>$Data/Context/SnmpVarBinds/SnmpVarBind[1]/Value$</AlertParameter5>
+          </AlertParameters>
+        </AlertSettings>
+        <OperationalStates>
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator.Success" MonitorTypeStateID="SecondEventRaised" HealthState="Success" />
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator.Error" MonitorTypeStateID="FirstEventRaised" HealthState="Warning" />
+        </OperationalStates>
+        <Configuration>
+          <FirstInterval>600</FirstInterval>
+          <FirstIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</FirstIP>
+          <FirstVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</FirstVersion>
+          <FirstSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.2.2.4.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </FirstSnmpVarBinds>
+          <FirstExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.2.2.4.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>NotEqual</Operator>
+              <ValueExpression>
+                <Value Type="Integer">1</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </FirstExpression>
+          <SecondInterval>600</SecondInterval>
+          <SecondIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</SecondIP>
+          <SecondVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</SecondVersion>
+          <SecondSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.2.2.4.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </SecondSnmpVarBinds>
+          <SecondExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.2.2.4.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>Equal</Operator>
+              <ValueExpression>
+                <Value Type="Integer">1</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </SecondExpression>
+          <NoOfRetries>3</NoOfRetries>
+          <Timeout>500</Timeout>
+          <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining" Accessibility="Public" Enabled="true" Target="Sample.APC.UPS.Device" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="NetworkLibrary!System.NetworkManagement.SnmpProbe.2SingleEvent2StateMonitorType" ConfirmDelivery="false">
+        <Category>Custom</Category>
+        <AlertSettings AlertMessage="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining_AlertMessageResourceID">
+          <AlertOnState>Warning</AlertOnState>
+          <AutoResolve>true</AutoResolve>
+          <AlertPriority>High</AlertPriority>
+          <AlertSeverity>Warning</AlertSeverity>
+          <AlertParameters>
+            <AlertParameter1>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</AlertParameter1>
+            <AlertParameter2>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/Location$</AlertParameter2>
+            <AlertParameter3>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PrimaryOwnerContact$</AlertParameter3>
+            <AlertParameter4>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</AlertParameter4>
+            <AlertParameter5>$Data/Context/SnmpVarBinds/SnmpVarBind[1]/Value$</AlertParameter5>
+          </AlertParameters>
+        </AlertSettings>
+        <OperationalStates>
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining.Success" MonitorTypeStateID="SecondEventRaised" HealthState="Success" />
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining.Error" MonitorTypeStateID="FirstEventRaised" HealthState="Warning" />
+        </OperationalStates>
+        <Configuration>
+          <FirstInterval>600</FirstInterval>
+          <FirstIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</FirstIP>
+          <FirstVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</FirstVersion>
+          <FirstSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.2.2.3.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </FirstSnmpVarBinds>
+          <FirstExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.2.2.3.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>Less</Operator>
+              <ValueExpression>
+                <Value Type="Integer">120000</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </FirstExpression>
+          <SecondInterval>600</SecondInterval>
+          <SecondIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</SecondIP>
+          <SecondVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</SecondVersion>
+          <SecondSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.2.2.3.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </SecondSnmpVarBinds>
+          <SecondExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.2.2.3.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>GreaterEqual</Operator>
+              <ValueExpression>
+                <Value Type="Integer">120000</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </SecondExpression>
+          <NoOfRetries>3</NoOfRetries>
+          <Timeout>500</Timeout>
+          <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity" Accessibility="Public" Enabled="true" Target="Sample.APC.UPS.Device" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="NetworkLibrary!System.NetworkManagement.SnmpProbe.2SingleEvent2StateMonitorType" ConfirmDelivery="false">
+        <Category>Custom</Category>
+        <AlertSettings AlertMessage="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity_AlertMessageResourceID">
+          <AlertOnState>Warning</AlertOnState>
+          <AutoResolve>true</AutoResolve>
+          <AlertPriority>High</AlertPriority>
+          <AlertSeverity>Warning</AlertSeverity>
+          <AlertParameters>
+            <AlertParameter1>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</AlertParameter1>
+            <AlertParameter2>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/Location$</AlertParameter2>
+            <AlertParameter3>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PrimaryOwnerContact$</AlertParameter3>
+            <AlertParameter4>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</AlertParameter4>
+            <AlertParameter5>$Data/Context/SnmpVarBinds/SnmpVarBind[1]/Value$</AlertParameter5>
+          </AlertParameters>
+        </AlertSettings>
+        <OperationalStates>
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity.Success" MonitorTypeStateID="SecondEventRaised" HealthState="Success" />
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity.Error" MonitorTypeStateID="FirstEventRaised" HealthState="Warning" />
+        </OperationalStates>
+        <Configuration>
+          <FirstInterval>600</FirstInterval>
+          <FirstIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</FirstIP>
+          <FirstVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</FirstVersion>
+          <FirstSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.2.2.1.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </FirstSnmpVarBinds>
+          <FirstExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.2.2.1.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>Less</Operator>
+              <ValueExpression>
+                <Value Type="Integer">70</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </FirstExpression>
+          <SecondInterval>600</SecondInterval>
+          <SecondIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</SecondIP>
+          <SecondVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</SecondVersion>
+          <SecondSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.2.2.1.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </SecondSnmpVarBinds>
+          <SecondExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.2.2.1.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>GreaterEqual</Operator>
+              <ValueExpression>
+                <Value Type="Integer">60</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </SecondExpression>
+          <NoOfRetries>3</NoOfRetries>
+          <Timeout>500</Timeout>
+          <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="Sample.APC.UPS.Monitor.upsAdvOutputLoad" Accessibility="Public" Enabled="true" Target="Sample.APC.UPS.Device" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="NetworkLibrary!System.NetworkManagement.SnmpProbe.2SingleEvent2StateMonitorType" ConfirmDelivery="false">
+        <Category>Custom</Category>
+        <AlertSettings AlertMessage="Sample.APC.UPS.Monitor.upsAdvOutputLoad_AlertMessageResourceID">
+          <AlertOnState>Warning</AlertOnState>
+          <AutoResolve>true</AutoResolve>
+          <AlertPriority>High</AlertPriority>
+          <AlertSeverity>Warning</AlertSeverity>
+          <AlertParameters>
+            <AlertParameter1>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</AlertParameter1>
+            <AlertParameter2>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/Location$</AlertParameter2>
+            <AlertParameter3>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PrimaryOwnerContact$</AlertParameter3>
+            <AlertParameter4>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</AlertParameter4>
+            <AlertParameter5>$Data/Context/SnmpVarBinds/SnmpVarBind[1]/Value$</AlertParameter5>
+          </AlertParameters>
+        </AlertSettings>
+        <OperationalStates>
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsAdvOutputLoad.Success" MonitorTypeStateID="SecondEventRaised" HealthState="Success" />
+          <OperationalState ID="Sample.APC.UPS.Monitor.upsAdvOutputLoad.Error" MonitorTypeStateID="FirstEventRaised" HealthState="Warning" />
+        </OperationalStates>
+        <Configuration>
+          <FirstInterval>600</FirstInterval>
+          <FirstIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</FirstIP>
+          <FirstVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</FirstVersion>
+          <FirstSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.4.2.3.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </FirstSnmpVarBinds>
+          <FirstExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.4.2.3.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>GreaterEqual</Operator>
+              <ValueExpression>
+                <Value Type="Integer">70</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </FirstExpression>
+          <SecondInterval>600</SecondInterval>
+          <SecondIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</SecondIP>
+          <SecondVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</SecondVersion>
+          <SecondSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.1.4.2.3.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </SecondSnmpVarBinds>
+          <SecondExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.1.4.2.3.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>Less</Operator>
+              <ValueExpression>
+                <Value Type="Integer">70</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </SecondExpression>
+          <NoOfRetries>3</NoOfRetries>
+          <Timeout>500</Timeout>
+          <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState" Accessibility="Public" Enabled="true" Target="Sample.APC.PDU.Device" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="NetworkLibrary!System.NetworkManagement.SnmpProbe.2SingleEvent2StateMonitorType" ConfirmDelivery="false">
+        <Category>Custom</Category>
+        <AlertSettings AlertMessage="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState_AlertMessageResourceID">
+          <AlertOnState>Warning</AlertOnState>
+          <AutoResolve>true</AutoResolve>
+          <AlertPriority>High</AlertPriority>
+          <AlertSeverity>Warning</AlertSeverity>
+          <AlertParameters>
+            <AlertParameter1>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</AlertParameter1>
+            <AlertParameter2>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/Location$</AlertParameter2>
+            <AlertParameter3>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PrimaryOwnerContact$</AlertParameter3>
+            <AlertParameter4>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</AlertParameter4>
+            <AlertParameter5>$Data/Context/SnmpVarBinds/SnmpVarBind[1]/Value$</AlertParameter5>
+          </AlertParameters>
+        </AlertSettings>
+        <OperationalStates>
+          <OperationalState ID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState.Success" MonitorTypeStateID="SecondEventRaised" HealthState="Success" />
+          <OperationalState ID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState.Error" MonitorTypeStateID="FirstEventRaised" HealthState="Warning" />
+        </OperationalStates>
+        <Configuration>
+          <FirstInterval>600</FirstInterval>
+          <FirstIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</FirstIP>
+          <FirstVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</FirstVersion>
+          <FirstSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.12.2.3.1.1.3.1</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </FirstSnmpVarBinds>
+          <FirstExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.12.2.3.1.1.3.1"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>NotEqual</Operator>
+              <ValueExpression>
+                <Value Type="Integer">1</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </FirstExpression>
+          <SecondInterval>600</SecondInterval>
+          <SecondIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</SecondIP>
+          <SecondVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</SecondVersion>
+          <SecondSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.12.2.3.1.1.3.1</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </SecondSnmpVarBinds>
+          <SecondExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.12.2.3.1.1.3.1"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>Equal</Operator>
+              <ValueExpression>
+                <Value Type="Integer">1</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </SecondExpression>
+          <NoOfRetries>3</NoOfRetries>
+          <Timeout>500</Timeout>
+          <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status" Accessibility="Public" Enabled="true" Target="Sample.APC.PDU.Device" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="NetworkLibrary!System.NetworkManagement.SnmpProbe.2SingleEvent2StateMonitorType" ConfirmDelivery="false">
+        <Category>Custom</Category>
+        <AlertSettings AlertMessage="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status_AlertMessageResourceID">
+          <AlertOnState>Warning</AlertOnState>
+          <AutoResolve>true</AutoResolve>
+          <AlertPriority>High</AlertPriority>
+          <AlertSeverity>Warning</AlertSeverity>
+          <AlertParameters>
+            <AlertParameter1>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</AlertParameter1>
+            <AlertParameter2>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/Location$</AlertParameter2>
+            <AlertParameter3>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PrimaryOwnerContact$</AlertParameter3>
+            <AlertParameter4>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</AlertParameter4>
+            <AlertParameter5>$Data/Context/SnmpVarBinds/SnmpVarBind[1]/Value$</AlertParameter5>
+          </AlertParameters>
+        </AlertSettings>
+        <OperationalStates>
+          <OperationalState ID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status.Success" MonitorTypeStateID="SecondEventRaised" HealthState="Success" />
+          <OperationalState ID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status.Error" MonitorTypeStateID="FirstEventRaised" HealthState="Warning" />
+        </OperationalStates>
+        <Configuration>
+          <FirstInterval>600</FirstInterval>
+          <FirstIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</FirstIP>
+          <FirstVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</FirstVersion>
+          <FirstSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.12.4.1.1.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </FirstSnmpVarBinds>
+          <FirstExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.12.4.1.1.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>NotEqual</Operator>
+              <ValueExpression>
+                <Value Type="Integer">1</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </FirstExpression>
+          <SecondInterval>600</SecondInterval>
+          <SecondIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</SecondIP>
+          <SecondVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</SecondVersion>
+          <SecondSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.12.4.1.1.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </SecondSnmpVarBinds>
+          <SecondExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.12.4.1.1.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>Equal</Operator>
+              <ValueExpression>
+                <Value Type="Integer">1</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </SecondExpression>
+          <NoOfRetries>3</NoOfRetries>
+          <Timeout>500</Timeout>
+          <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status" Accessibility="Public" Enabled="true" Target="Sample.APC.PDU.Device" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="NetworkLibrary!System.NetworkManagement.SnmpProbe.2SingleEvent2StateMonitorType" ConfirmDelivery="false">
+        <Category>Custom</Category>
+        <AlertSettings AlertMessage="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status_AlertMessageResourceID">
+          <AlertOnState>Warning</AlertOnState>
+          <AutoResolve>true</AutoResolve>
+          <AlertPriority>High</AlertPriority>
+          <AlertSeverity>Warning</AlertSeverity>
+          <AlertParameters>
+            <AlertParameter1>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/sysName$</AlertParameter1>
+            <AlertParameter2>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/Location$</AlertParameter2>
+            <AlertParameter3>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PrimaryOwnerContact$</AlertParameter3>
+            <AlertParameter4>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</AlertParameter4>
+            <AlertParameter5>$Data/Context/SnmpVarBinds/SnmpVarBind[1]/Value$</AlertParameter5>
+          </AlertParameters>
+        </AlertSettings>
+        <OperationalStates>
+          <OperationalState ID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status.Success" MonitorTypeStateID="SecondEventRaised" HealthState="Success" />
+          <OperationalState ID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status.Error" MonitorTypeStateID="FirstEventRaised" HealthState="Warning" />
+        </OperationalStates>
+        <Configuration>
+          <FirstInterval>600</FirstInterval>
+          <FirstIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</FirstIP>
+          <FirstVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</FirstVersion>
+          <FirstSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.12.4.1.2.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </FirstSnmpVarBinds>
+          <FirstExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.12.4.1.2.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>NotEqual</Operator>
+              <ValueExpression>
+                <Value Type="Integer">1</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </FirstExpression>
+          <SecondInterval>600</SecondInterval>
+          <SecondIP>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPAddress$</SecondIP>
+          <SecondVersion>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/SNMPVersion$</SecondVersion>
+          <SecondSnmpVarBinds>
+            <SnmpVarBind>
+              <OID>.1.3.6.1.4.1.318.1.1.12.4.1.2.0</OID>
+              <Syntax>0</Syntax>
+              <Value VariantType="8" />
+            </SnmpVarBind>
+          </SecondSnmpVarBinds>
+          <SecondExpression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">SnmpVarBinds/SnmpVarBind[OID=".1.3.6.1.4.1.318.1.1.12.4.1.2.0"]/Value</XPathQuery>
+              </ValueExpression>
+              <Operator>Equal</Operator>
+              <ValueExpression>
+                <Value Type="Integer">1</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </SecondExpression>
+          <NoOfRetries>3</NoOfRetries>
+          <Timeout>500</Timeout>
+          <Port>$Target/Property[Type="NetworkLibrary!System.NetworkManagement.Node"]/PortNumber$</Port>
+        </Configuration>
+      </UnitMonitor>
+    </Monitors>
+  </Monitoring>
+  <Presentation>
+    <Views>
+      <View ID="Sample.APC.Devices.StateView" Accessibility="Public" Enabled="true" Target="Sample.APC.Device" TypeID="SC!Microsoft.SystemCenter.StateViewType" Visible="true">
+        <Category>Operations</Category>
+        <Presentation>
+          <ColumnInfo Index="0" SortIndex="0" Width="100" Grouped="false" Sorted="true" IsSortable="true" Visible="true" SortOrder="Descending">
+            <Name>State</Name>
+            <Id>Sample.APC.Device</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="1" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="true" SortOrder="Ascending">
+            <Name>In Maintenance Mode</Name>
+            <Id>InMaintenanceMode</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="2" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="true" SortOrder="Ascending">
+            <Name>Name</Name>
+            <Id>Name</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="3" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>Path</Name>
+            <Id>Path</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="4" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>Access Mode</Name>
+            <Id>AccessMode</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="5" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>Certification</Name>
+            <Id>Certification</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="6" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>Description</Name>
+            <Id>Description</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="7" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="true" SortOrder="Ascending">
+            <Name>Location</Name>
+            <Id>Location</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="8" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="true" SortOrder="Ascending">
+            <Name>Model</Name>
+            <Id>Model</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="9" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>Name Format</Name>
+            <Id>NameFormat</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="10" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>OS Version</Name>
+            <Id>OSVersion</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="11" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>Port Number</Name>
+            <Id>PortNumber</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="12" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>Primary Owner Contact</Name>
+            <Id>PrimaryOwnerContact</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="13" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>Primary Owner Name</Name>
+            <Id>PrimaryOwnerName</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="14" SortIndex="-1" Width="130" Grouped="false" Sorted="false" IsSortable="true" Visible="true" SortOrder="Ascending">
+            <Name>SNMP Agent Address</Name>
+            <Id>SNMPAddress</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="15" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>SNMP Version</Name>
+            <Id>SNMPVersion</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="16" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>Source Address</Name>
+            <Id>SourceAddress</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="17" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="false" Visible="false" SortOrder="Ascending">
+            <Name>supports HC Counters</Name>
+            <Id>supportsHCCounters</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="18" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="false" Visible="false" SortOrder="Ascending">
+            <Name>Supports SNMP</Name>
+            <Id>SupportsSNMP</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="19" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>System Name</Name>
+            <Id>sysName</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="20" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>System Object ID</Name>
+            <Id>SystemObjectID</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="21" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="false" SortOrder="Ascending">
+            <Name>User</Name>
+            <Id>User</Id>
+          </ColumnInfo>
+          <ColumnInfo Index="22" SortIndex="-1" Width="100" Grouped="false" Sorted="false" IsSortable="true" Visible="true" SortOrder="Ascending">
+            <Name>Vendor</Name>
+            <Id>Vendor</Id>
+          </ColumnInfo>
+        </Presentation>
+      </View>
+      <View ID="Sample.APC.Devices.PerformanceView" Accessibility="Public" Enabled="true" Target="Sample.APC.Device" TypeID="SC!Microsoft.SystemCenter.PerformanceViewType" Visible="true">
+        <Category>Operations</Category>
+        <Criteria />
+        <Presentation>
+          <SortedColumnIndex>0</SortedColumnIndex>
+          <SortOrder>0</SortOrder>
+          <StartTime>2013-08-19T04:47:12.8218238-05:00</StartTime>
+          <EndTime>2013-08-20T04:47:12.8218238-05:00</EndTime>
+          <DynamicTimeTicks>864000000000</DynamicTimeTicks>
+          <IsDynamic>true</IsDynamic>
+          <Is3DMode>false</Is3DMode>
+          <ShowAlerts>false</ShowAlerts>
+          <ShowMaintenanceMode>false</ShowMaintenanceMode>
+          <BaselineMode>false</BaselineMode>
+          <ShowPointLabels>false</ShowPointLabels>
+          <EnableSmartLabels>true</EnableSmartLabels>
+          <RightAngleAxes>false</RightAngleAxes>
+          <ClusterSeries>false</ClusterSeries>
+          <Title />
+          <TitleFont>Microsoft Sans Serif,12,Regular</TitleFont>
+          <ChartFont>Microsoft Sans Serif,8.25,Regular</ChartFont>
+          <ShowBands>false</ShowBands>
+          <BandColor>-1579033</BandColor>
+          <ChartType>Line</ChartType>
+          <Depth>100</Depth>
+          <GapDepth>100</GapDepth>
+          <Perspective>10</Perspective>
+          <GraphXRotation>0</GraphXRotation>
+          <GraphYRotation>0</GraphYRotation>
+          <XLabelAngle>0</XLabelAngle>
+          <LabelColor>-16777216</LabelColor>
+          <LabelFont>Microsoft Sans Serif,8.25,Regular</LabelFont>
+          <XAxisVisible>True</XAxisVisible>
+          <XShowMajorGridlines>false</XShowMajorGridlines>
+          <XShowMinorGridlines>false</XShowMinorGridlines>
+          <ShowInterlaceStrips>false</ShowInterlaceStrips>
+          <XInterlaceColor>16777215</XInterlaceColor>
+          <XShowSideMargin>true</XShowSideMargin>
+          <XAxisFont>Microsoft Sans Serif,8.25,Regular</XAxisFont>
+          <AutoAxis>true</AutoAxis>
+          <AxisMax>100</AxisMax>
+          <AxisMin>0</AxisMin>
+          <YAxisVisible>True</YAxisVisible>
+          <YShowMajorGridlines>true</YShowMajorGridlines>
+          <YShowMinorGridlines>false</YShowMinorGridlines>
+          <YShowInterlaceStrips>false</YShowInterlaceStrips>
+          <YShowSideMargin>true</YShowSideMargin>
+          <YAxisFont>Microsoft Sans Serif,8.25,Regular</YAxisFont>
+          <BackgroundColor1>-1</BackgroundColor1>
+          <BackgroundColor2>-1</BackgroundColor2>
+          <GradientType>None</GradientType>
+          <Series />
+        </Presentation>
+        <Target />
+      </View>
+    </Views>
+    <Folders>
+      <Folder ID="Sample.APC.Devices.Folder" Accessibility="Public" ParentFolder="NetworkMonitoring!System.NetworkManagement.ViewFolder.Root" />
+    </Folders>
+    <FolderItems>
+      <FolderItem ElementID="Sample.APC.Devices.StateView" ID="Sample.APC.Devices.StateView.FolderItem" Folder="Sample.APC.Devices.Folder" />
+      <FolderItem ElementID="Sample.APC.Devices.PerformanceView" ID="Sample.APC.Devices.PerformanceView.FolderItem" Folder="Sample.APC.Devices.Folder" />
+    </FolderItems>
+    <StringResources>
+      <StringResource ID="Sample.APC.UPS.Monitor.upsBasicOutputStatus_AlertMessageResourceID" />
+      <StringResource ID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus_AlertMessageResourceID" />
+      <StringResource ID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator_AlertMessageResourceID" />
+      <StringResource ID="Sample.APC.UPS.Monitor.upsAdvOutputLoad_AlertMessageResourceID" />
+      <StringResource ID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining_AlertMessageResourceID" />
+      <StringResource ID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity_AlertMessageResourceID" />
+      <StringResource ID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState_AlertMessageResourceID" />
+      <StringResource ID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status_AlertMessageResourceID" />
+      <StringResource ID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status_AlertMessageResourceID" />
+    </StringResources>
+  </Presentation>
+  <LanguagePacks>
+    <LanguagePack ID="ENU" IsDefault="true">
+      <DisplayStrings>
+        <DisplayString ElementID="Sample.APC">
+          <Name>Sample APC</Name>
+          <Description>Monitors APC devices</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.Device">
+          <Name>Sample APC Device</Name>
+          <Description>Sample APC devices</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Device">
+          <Name>Sample APC UPS Device</Name>
+          <Description>Sample APC UPS devices</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Device">
+          <Name>Sample APC PDU Device</Name>
+          <Description>Sample APC PDU devices</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.Device.Discovery.DataSource">
+          <Name>Sample APC Device Discovery DataSource</Name>
+          <Description>Sample APC device Discovery DataSource</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.Device.Discovery">
+          <Name>Sample APC Device Discovery</Name>
+          <Description>Discovers Sample APC devices</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Device.Discovery">
+          <Name>Sample APC UPS Device Discovery</Name>
+          <Description>Discovers Sample APC UPS devices</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Device.Discovery">
+          <Name>Sample APC PDU Device Discovery</Name>
+          <Description>Discovers Sample APC PDU devices</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsBasicOutputStatus">
+          <Name>Sample APC UPS Basic Output Status</Name>
+          <Description>SCOM Monitor that polls APC UPS Units. Returns error and alert if not in normal status.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsBasicOutputStatus" SubElementID="Sample.APC.UPS.Monitor.upsBasicOutputStatus.Error">
+          <Name>Failure Event</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsBasicOutputStatus" SubElementID="Sample.APC.UPS.Monitor.upsBasicOutputStatus.Success">
+          <Name>Ok</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsBasicOutputStatus_AlertMessageResourceID">
+          <Name>Sample APC Ups Basic Output Status</Name>
+          <Description>Unit Attributes:
+Name: {0}
+Location: {1}
+Primary Owner: {2}
+IP : {3}
+
+Monitor Name
+APC UPS Basic Output Status
+
+Monitor Type
+SNMP - QA Monitor
+
+SNMP Object Type
+upsBasicOutputStatus
+
+OID
+1.3.6.1.4.1.318.1.1.1.4.1.1.0
+
+Returns
+The current state of the UPS: {4}
+
+Legend
+ 1 = Unknown
+ 2 = On Line
+ 3 = On Battery
+ 4 = On Smart Boost
+ 5 = Timed Sleeping
+ 6 = Software Bypass
+ 7 = Off
+ 8 = Rebooting
+ 9 = Switched Bypass
+ 10 = Hardware Failure Bypass
+ 11 = Sleeping Until Power Returns
+ 12 = On Smart Trim
+ 
+Monitoring Condition
+
+Healthy if equal to 2 
+Monitor warning indicates that the UPS is running on battery (3) or is not providing line voltage to any attached devices.</Description>
+		</DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus">
+          <Name>Sample APC UPS Basic Battery Status</Name>
+          <Description>SCOM Monitor that polls APC UPS Units. Returns error and alert if not in normal status.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus" SubElementID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus.Error">
+          <Name>Failure Event</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus" SubElementID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus.Success">
+          <Name>Ok</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsBasicBatteryStatus_AlertMessageResourceID">
+          <Name>Sample APC Ups Battery Status</Name>
+          <Description>Unit Attributes:
+Name: {0}
+Location: {1}
+Primary Owner: {2}
+IP : {3}
+ 
+Monitor Name
+ APC UPS Battery Status
+
+Monitor Type
+SNMP - QA Monitor
+
+SNMP Object Type
+upsBasicBatteryStatus
+
+OID
+1.3.6.1.4.1.318.1.1.1.2.1.1.0
+
+Returns
+The status of the UPS batteries: {4}
+
+Legend
+ 1 = Unknown
+ 2 = Battery Normal
+ 3 = Battery Low
+
+Note: The enumeration 'Battery Low' (3) indicates that the UPS will be unable to sustain the current load, and its services will be lost if power is not restored.
+ 
+Monitoring Condition
+
+Healthy if equal to 2
+Monitor warning indicates that the battery status is either 'Unknown' (communication with the UPS has been lost) or that the battery is running low and will turn off shortly. This is used as a final warning condition.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator">
+          <Name>Sample APC Ups Battery Replacement Indicator</Name>
+          <Description>SCOM Monitor that polls APC UPS Units. Returns error and alert if not in normal status. 
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator" SubElementID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator.Success">
+          <Name>Ok</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator" SubElementID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator.Error">
+          <Name>Failure Event</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryReplaceIndicator_AlertMessageResourceID">
+          <Name>Sample APC Ups Battery Replacement Indicator</Name>
+          <Description>Unit Attributes:
+
+Name: {0}
+Location: {1}
+Primary Owner: {2}
+IP : {3}
+
+APC UPS Replace Battery
+
+Monitor Type
+SNMP - QA Monitor
+
+SNMP Object Type
+upsAdvBatteryReplaceIndicator
+
+OID
+1.3.6.1.4.1.318.1.1.1.2.2.4.0
+
+Returns
+Indicates whether the UPS batteries need to be replaced: {4}
+
+Legend
+ 1 = Batteries do not need replacing
+ 2 = Batteries need replacing
+
+Monitoring Condition
+Healthy if not equal to 2
+Monitor warning indicates that there is a UPS battery that needs to be changed. The UPS may not perform as desired should a power failure occur.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryRunTimeRemaining">
+          <Name>Sample APC Ups Battery RunTime Remaining</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsAdvBatteryRunTimeRemaining
+
+Name
+upsAdvBatteryRunTimeRemaining
+
+Oid
+1.3.6.1.4.1.318.1.1.1.2.2.3.0
+
+ 
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsBattery . upsAdvBattery . upsAdvBatteryRunTimeRemaining
+
+Type
+TimeTicks
+ 
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+ 
+Status
+mandatory
+ 
+Description
+--------------------------------------------------------------------------------
+
+ The UPS battery run time remaining before battery exhaustion.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryRunTimeRemaining" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryRunTimeRemaining" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryRunTimeRemaining" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsBasicBatteryStatus">
+          <Name>Sample APC Ups Basic Battery Status</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsBasicBatteryStatus
+
+Name
+upsBasicBatteryStatus
+
+Oid
+1.3.6.1.4.1.318.1.1.1.2.1.1.0
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsBattery . upsBasicBattery . upsBasicBatteryStatus
+
+Base-Type
+integer
+
+Known-Values
+ unknown (1) batteryNormal (2) batteryLow (3) 
+
+Access
+read-only
+
+Status
+mandatory
+
+Description
+--------------------------------------------------------------------------------
+ The status of the UPS batteries.  A batteryLow(3) value indicates the UPS will be unable to sustain the current load, and its services will be lost if power is not restored.  The amount of run time in reserve at the time of low battery can be configured by the upsAdvConfigLowBatteryRunTime.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsBasicBatteryStatus" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsBasicBatteryStatus" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsBasicBatteryStatus" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsBasicBatteryTimeOnBattery">
+          <Name>Sample APC Ups Time On Battery</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsBasicBatteryTimeOnBattery
+
+Name
+upsBasicBatteryTimeOnBattery
+
+Oid
+1.3.6.1.4.1.318.1.1.1.2.1.2.0
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsBattery . upsBasicBattery . upsBasicBatteryTimeOnBattery
+
+Type
+TimeTicks
+
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+
+Status
+mandatory
+
+Description
+
+--------------------------------------------------------------------------------
+ The elapsed time since the UPS has switched to battery power.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryTemperature">
+          <Name>Sample APC Ups Battery Temperature</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsAdvBatteryTemperature
+
+Name
+upsAdvBatteryTemperature
+
+Oid
+1.3.6.1.4.1.318.1.1.1.2.2.2.0
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsBattery . upsAdvBattery . upsAdvBatteryTemperature
+
+Type
+Gauge
+
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+
+Status
+mandatory
+
+Description
+--------------------------------------------------------------------------------
+
+ The current internal UPS temperature expressed in Celsius.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvInputLineVoltage">
+          <Name>Sample APC Ups Input Line Voltage</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsAdvInputLineVoltage
+
+Name
+upsAdvInputLineVoltage
+
+Oid
+1.3.6.1.4.1.318.1.1.1.3.2.1.0
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsInput . upsAdvInput . upsAdvInputLineVoltage
+
+Type
+Gauge
+
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+
+Status
+mandatory
+
+Description
+--------------------------------------------------------------------------------
+
+ The current utility line voltage in VAC.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvInputFrequency">
+          <Name>Sample APC Ups Input Frequency</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsAdvInputFrequency
+
+Name
+upsAdvInputFrequency
+
+Oid
+1.3.6.1.4.1.318.1.1.1.3.2.4.0
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsInput . upsAdvInput . upsAdvInputFrequency
+
+Type
+Gauge
+
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+
+Status
+mandatory
+
+Description
+--------------------------------------------------------------------------------
+
+ The current input frequency to the UPS system in Hz.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryCapacity">
+          <Name>Sample APC Ups Battery Capacity</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsAdvBatteryCapacity
+
+Name
+upsAdvBatteryCapacity
+
+Oid
+1.3.6.1.4.1.318.1.1.1.2.2.1.0
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsBattery . upsAdvBattery . upsAdvBatteryCapacity
+
+Type
+Gauge
+
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+
+Status
+mandatory
+
+Description
+--------------------------------------------------------------------------------
+ The remaining battery capacity expressed in percent of full capacity.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryCapacity" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryCapacity" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryCapacity" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvInputLineVoltage" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvInputLineVoltage" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvInputLineVoltage" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryTemperature" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryTemperature" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvBatteryTemperature" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvInputFrequency" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvInputFrequency" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvInputFrequency" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsBasicBatteryTimeOnBattery" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsBasicBatteryTimeOnBattery" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsBasicBatteryTimeOnBattery" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputVoltage">
+          <Name>Sample APC Ups Output Voltage</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsAdvOutputVoltage
+ 
+Name
+upsAdvOutputVoltage
+
+Oid
+1.3.6.1.4.1.318.1.1.1.4.2.1.0
+ 
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsOutput . upsAdvOutput . upsAdvOutputVoltage
+ 
+Type
+Gauge
+ 
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+ 
+Status
+mandatory
+ 
+Description
+--------------------------------------------------------------------------------
+
+ The output voltage of the UPS system in VAC.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputLoad">
+          <Name>Sample APC Ups Output Load</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsAdvOutputLoad
+Name
+upsAdvOutputLoad
+ 
+Oid
+1.3.6.1.4.1.318.1.1.1.4.2.3.0
+ 
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsOutput . upsAdvOutput . upsAdvOutputLoad
+ 
+Type
+Gauge
+ 
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+ 
+Status
+mandatory
+ 
+Description
+--------------------------------------------------------------------------------
+
+ The current UPS load expressed in percent of rated capacity.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputFrequency">
+          <Name>Sample APC Ups Output Frequency</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsAdvOutputFrequency
+
+Name
+upsAdvOutputFrequency
+ 
+Oid
+1.3.6.1.4.1.318.1.1.1.4.2.2.0
+ 
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsOutput . upsAdvOutput . upsAdvOutputFrequency
+ 
+Type
+Gauge
+ 
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+ 
+Status
+mandatory
+ 
+Description
+--------------------------------------------------------------------------------
+
+ The current output frequency of the UPS system in Hz.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputCurrent">
+          <Name>Sample APC Ups Output Current</Name>
+          <Description>SCOM Rule that polls and logs APC UPS Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : upsAdvOutputCurrent
+
+Name
+upsAdvOutputCurrent
+ 
+Oid
+1.3.6.1.4.1.318.1.1.1.4.2.4.0
+ 
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . ups . upsOutput . upsAdvOutput . upsAdvOutputCurrent
+ 
+Type
+Gauge
+ 
+Value-Ranges
+ 0 to 4294967295 
+
+Access
+read-only
+ 
+Status
+mandatory
+
+Description
+
+--------------------------------------------------------------------------------
+ The current in amperes drawn by the load on the UPS.</Description>
+        </DisplayString>
+		<DisplayString ElementID="Sample.APC.PDU.Rule.rPDULoadStatusLoadState">
+          <Name>Sample APC PDU Load Status</Name>
+          <Description>SCOM Rule that polls and logs APC PDU Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : rPDULoadStatusLoadState
+
+Name
+rPDULoadStatusLoadState
+ 
+Oid
+1.3.6.1.4.1.318.1.1.12.2.3.1.1.3.1
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . rPDU . rPDULoad . rPDULoadStatus . rPDULoadStatusTable . rPDULoadStatusEntry . rPDULoadStatusLoadState
+
+Type
+Integer
+
+Known Values
+phaseLoadNormal (1)
+phaseLoadLow (2)
+phaseLoadNearOverload (3)
+phaseLoadOverload (4)
+
+Access 
+read-only 
+
+Status 
+mandatory 
+
+Description 
+
+Getting this OID will return the phase/bank load state.
+
+phaseLoadNormal(1) indicates that the phase/bank is operating properly within the rPDULoadConfigLowLoadThreshold and rPDULoadConfigNearOverloadThreshold OID values.
+
+phaseLoadLow(2) indicates that the phase/bank load has dropped below the rPDULoadConfigLowLoadThreshold OID value. An SNMP trap will occur when this state is entered or cleared.
+
+phaseLoadNearOverload(3) indicates that the phase/bank load is greater than or equal to the rPDULoadConfigNearOverloadThreshold OID value. An SNMP trap will occur when this state is entered or cleared.
+
+phaseLoadOverload(4) indicates that the phase/bank load is greater than or equal to the rPDULoadConfigOverloadThreshold OID value. An SNMP trap will occur when this state is entered or cleared. 
+</Description>
+        </DisplayString>
+		<DisplayString ElementID="Sample.APC.PDU.Rule.rPDUPowerSupply1Status">
+          <Name>Sample APC PDU Power Supply 1 Status</Name>
+          <Description>SCOM Rule that polls and logs APC PDU Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : rPDUPowerSupply1Status 
+
+Name
+rPDUPowerSupply1Status
+ 
+Oid
+1.3.6.1.4.1.318.1.1.12.4.1.1.0
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . rPDU . rPDUPowerSupply . rPDUPowerSupplyDevice . rPDUPowerSupply1Status
+
+Type
+Integer
+
+Known Values
+PowerSupply1Ok (1)
+PowerSupply1Failed (2)
+
+Access 
+read-only 
+
+Status 
+mandatory 
+
+Description 
+
+Getting this OID will return powerSupply1Ok(1) if power supply 1 is functioning normally.  If not functioning normally, this OID will return powerSupply1Failed(2).
+</Description>
+        </DisplayString>
+		<DisplayString ElementID="Sample.APC.PDU.Rule.rPDUPowerSupply2Status">
+          <Name>Sample APC PDU Power Supply 2 Status</Name>
+          <Description>SCOM Rule that polls and logs APC PDU Units.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx
+
+POWERNET-MIB : rPDUPowerSupply2Status
+
+Name
+rPDUPowerSupply2Status
+ 
+1.3.6.1.4.1.318.1.1.12.4.1.2.0
+
+Path
+iso . org . dod . internet . private . enterprises . apc . products . hardware . rPDU . rPDUPowerSupply . rPDUPowerSupplyDevice . rPDUPowerSupply2Status
+
+Type
+Integer
+
+Known Values
+PowerSupply2Ok (1)
+PowerSupply2Failed (2)
+
+Access 
+read-only 
+
+Status 
+mandatory 
+
+Description 
+
+Getting this OID will return powerSupply2Ok(1) if power supply 2 is functioning normally.  If not functioning normally, this OID will return powerSupply2Failed(2).
+</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining">
+          <Name>Sample APC Ups Battery RunTime Remaining</Name>
+          <Description>SCOM Monitor that polls APC UPS Units. Returns error and alert if not in normal status.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining" SubElementID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining.Success">
+          <Name>Ok</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining" SubElementID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining.Error">
+          <Name>Failure Event</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity">
+          <Name>Sample APC Ups Battery Capacity</Name>
+          <Description>SCOM Monitor that polls APC UPS Units. Returns error and alert if not in normal status.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity" SubElementID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity.Success">
+          <Name>Ok</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity" SubElementID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity.Error">
+          <Name>Failure Event</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState">
+          <Name>Sample APC PDU Load Status</Name>
+          <Description>SCOM Monitor that polls APC PDU Units. Returns error and alert if not in normal status.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/item.aspx?id=rPDULoadStatusLoadState</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState" SubElementID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState.Success">
+          <Name>Ok</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState" SubElementID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState.Error">
+          <Name>Failure Event</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status">
+          <Name>Sample APC PDU PowerSupply 1 Status</Name>
+          <Description>SCOM Monitor that polls APC PDU Units. Returns error and alert if not in normal status.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/item.aspx?id=rPDUPowerSupply1Status</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status" SubElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status.Success">
+          <Name>Ok</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status" SubElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status.Error">
+          <Name>Failure Event</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status">
+          <Name>Sample APC PDU PowerSupply 2 Status</Name>
+          <Description>SCOM Monitor that polls APC PDU Units. Returns error and alert if not in normal status.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/item.aspx?id=rPDUPowerSupply2Status</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status" SubElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status.Success">
+          <Name>Ok</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status" SubElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status.Error">
+          <Name>Failure Event</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvOutputLoad">
+          <Name>Sample APC Ups Output Load</Name>
+          <Description>SCOM Monitor that polls APC UPS Units. Returns error and alert if not in normal status.
+
+References:
+http://support.ipmonitor.com/mibs/POWERNET-MIB/info.aspx</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvOutputLoad" SubElementID="Sample.APC.UPS.Monitor.upsAdvOutputLoad.Success">
+          <Name>Ok</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvOutputLoad" SubElementID="Sample.APC.UPS.Monitor.upsAdvOutputLoad.Error">
+          <Name>Failure Event</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvOutputLoad_AlertMessageResourceID">
+          <Name>Sample APC ups Output Load</Name>
+          <Description>Unit Attributes:
+Name: {0}
+Location: {1}
+Primary Owner: {2}
+IP : {3}
+
+Monitor Name
+ APC UPS Output Load
+
+Monitor Type
+SNMP - QA Monitor
+
+SNMP Object Type
+upsAdvOutputLoad
+
+OID
+1.3.6.1.4.1.318.1.1.1.4.2.3.0
+
+Returns
+The status of the UPS Output Load: {4}
+ 
+Monitoring Condition
+
+Healthy if less than 70.
+The current UPS load expressed in percent of rated capacity. </Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputVoltage" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputVoltage" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputVoltage" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputCurrent" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputCurrent" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputCurrent" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputFrequency" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputFrequency" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputFrequency" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputLoad" SubElementID="WriteToDW">
+          <Name>Performance data publisher</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputLoad" SubElementID="WriteToDB">
+          <Name>Performance Data Collection Write Action</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Rule.upsAdvOutputLoad" SubElementID="DS">
+          <Name>DS</Name>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryRunTimeRemaining_AlertMessageResourceID">
+          <Name>Sample APC ups Battery Runtime Remaining</Name>
+          <Description>Unit Attributes:
+Name: {0}
+Location: {1}
+Primary Owner: {2}
+IP : {3}
+
+Monitor Name
+ APC UPS :: Battery Runtime Remaining
+
+Monitor Type
+SNMP - QA Monitor
+
+SNMP Object Type
+upsAdvBatteryRunTimeRemaining
+
+OID
+1.3.6.1.4.1.318.1.1.1.2.2.3.0
+
+Returns
+The status of the UPS battery run time remaining: {4}
+ 
+Monitoring Condition
+
+Pass if greater than 120000 time ticks (20 minutes)
+ The UPS battery run time remaining before battery exhaustion.
+</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Monitor.upsAdvBatteryCapacity_AlertMessageResourceID">
+          <Name>Sample APC ups Battery Capacity</Name>
+          <Description>Unit Attributes:
+Name: {0}
+Location: {1}
+Primary Owner: {2}
+IP : {3}
+
+Monitor Name
+ APC UPS Battery Capacity
+
+Monitor Type
+SNMP - QA Monitor
+
+SNMP Object Type
+upsAdvBatteryCapacity
+
+OID
+1.3.6.1.4.1.318.1.1.1.2.2.1.0
+
+Returns
+The status of the UPS Battery Capacity: {4}
+ 
+Monitoring Condition
+
+Healthy if greater than or equal to 60 percent.
+The remaining battery capacity expressed in percent of full capacity.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDULoadStatusLoadState_AlertMessageResourceID">
+          <Name>Sample APC PDU Load Status</Name>
+          <Description>Unit Attributes:
+Name: {0}
+Location: {1}
+Primary Owner: {2}
+IP : {3}
+
+Monitor Name
+ APC PDU Load Status
+
+Monitor Type
+SNMP - QA Monitor
+
+SNMP Object Type
+rPDULoadStatusLoadState
+
+OID
+1.3.6.1.4.1.318.1.1.12.2.3.1.1.3.1
+
+Returns
+The status of the PDU Load: {4}
+ 
+Monitoring Condition
+Healthy: 1
+Low: 2
+Near Overload:3
+Overload: 4</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply1Status_AlertMessageResourceID">
+          <Name>Sample APC PDU PowerSupply 1 Status</Name>
+          <Description>Unit Attributes:
+Name: {0}
+Location: {1}
+Primary Owner: {2}
+IP : {3}
+
+Monitor Name
+ APC PDU PowerSupply 1 Status
+
+Monitor Type
+SNMP - QA Monitor
+
+SNMP Object Type
+rPDUPowerSupply1Status
+
+OID
+1.3.6.1.4.1.318.1.1.12.4.1.1.0
+
+Returns
+The status of the PowerSupply 1 of the PDU: {4}
+ 
+Monitoring Condition
+Healthy: 1
+Failed: 2
+</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Monitor.rPDUPowerSupply2Status_AlertMessageResourceID">
+          <Name>Sample APC PDU PowerSupply 2 Status</Name>
+          <Description>Unit Attributes:
+Name: {0}
+Location: {1}
+Primary Owner: {2}
+IP : {3}
+
+Monitor Name
+ APC PDU PowerSupply 2 Status
+
+Monitor Type
+SNMP - QA Monitor
+
+SNMP Object Type
+rPDUPowerSupply1Status
+
+OID
+1.3.6.1.4.1.318.1.1.12.4.1.2.0
+
+Returns
+The status of the PowerSupply 2 of the PDU: {4}
+ 
+Monitoring Condition
+Healthy: 1
+Failed: 2
+</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.Device.Group">
+          <Name>Sample APC devices Group</Name>
+          <Description>Sample APC devices group</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.Device.Group.Discovery">
+          <Name>Populate Sample APC devices Group</Name>
+          <Description>This discovery rule populates the group 'Sample APC devices Group'</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Device.Group">
+          <Name>Sample APC UPS devices Group</Name>
+          <Description>Sample APC UPS devices group</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.UPS.Device.Group.Discovery">
+          <Name>Populate Sample APC UPS devices Group</Name>
+          <Description>This discovery rule populates the group 'Sample APC UPS devices Group'</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Device.Group">
+          <Name>Sample APC PDU devices Group</Name>
+          <Description>Sample APC PDU devices group</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.PDU.Device.Group.Discovery">
+          <Name>Populate Sample APC PDU devices Group</Name>
+          <Description>This discovery rule populates the group 'Sample APC PDU devices Group'</Description>
+        </DisplayString>
+		<DisplayString ElementID="Sample.APC.Devices.Folder">
+          <Name>Sample APC</Name>
+          <Description>Sample APC Folder</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.Devices.StateView">
+          <Name>Sample APC</Name>
+          <Description>This view shows the state of all discovered Sample APC devices.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.APC.Devices.PerformanceView">
+          <Name>Sample APC Performance</Name>
+          <Description>This view shows the performance of all discovered Sample APC devices.</Description>
+        </DisplayString>
+      </DisplayStrings>
+    </LanguagePack>
+  </LanguagePacks>
+</ManagementPack>

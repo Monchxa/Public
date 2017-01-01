@@ -1,0 +1,345 @@
+<ManagementPack ContentReadable="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <Manifest>
+    <Identity>
+      <ID>Sample.BaseMonitoring</ID>
+      <Version>1.0.0.1</Version>
+    </Identity>
+    <Name>Sample Discovery Control MP 2007</Name>
+    <References>
+      <Reference Alias="SCLibrary">
+        <ID>Microsoft.SystemCenter.Library</ID>
+        <Version>6.0.6278.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Windows">
+        <ID>Microsoft.Windows.Library</ID>
+        <Version>6.0.6278.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="SystemHealth">
+        <ID>System.Health.Library</ID>
+        <Version>6.0.6278.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="System">
+        <ID>System.Library</ID>
+        <Version>6.0.6278.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+    </References>
+  </Manifest>
+  <TypeDefinitions>
+    <ModuleTypes>
+	  <DataSourceModuleType ID="Sample.BaseMonitoring.CheckGreyedOutAgents.DataSource" Accessibility="Internal" Batching="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="IntervalSeconds" type="xsd:integer" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+          <xsd:element minOccurs="0" name="SyncTime" type="xsd:string" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+		  <xsd:element minOccurs="1" name="Debug" type="xsd:boolean" />
+          <xsd:element minOccurs="1" name="DebugFileName" type="xsd:string" />
+          <xsd:element minOccurs="1" name="LogSuccessEvent" type="xsd:boolean" />
+          <xsd:element minOccurs="1" name="TimeoutSeconds" type="xsd:integer" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IntervalSeconds" Selector="$Config/IntervalSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="SyncTime" Selector="$Config/SyncTime$" ParameterType="string" />
+          <OverrideableParameter ID="Debug" Selector="$Config/Debug$" ParameterType="bool" />
+          <OverrideableParameter ID="DebugFileName" Selector="$Config/DebugFileName$" ParameterType="string" />
+          <OverrideableParameter ID="LogSuccessEvent" Selector="$Config/LogSuccessEvent$" ParameterType="bool" />
+          <OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <DataSource ID="Scheduler" TypeID="System!System.Scheduler">
+                <Scheduler>
+                  <SimpleReccuringSchedule>
+                    <Interval Unit="Seconds">$Config/IntervalSeconds$</Interval>
+                    <SyncTime>$Config/SyncTime$</SyncTime>
+                  </SimpleReccuringSchedule>
+                  <ExcludeDates />
+                </Scheduler>
+              </DataSource>
+              <ProbeAction ID="Probe" TypeID="Sample.BaseMonitoring.CheckGreyedOutAgents.Probe">
+                <Debug>$Config/Debug$</Debug>
+                <DebugFileName>$Config/DebugFileName$</DebugFileName>
+                <LogSuccessEvent>$Config/LogSuccessEvent$</LogSuccessEvent>
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+              </ProbeAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="Probe">
+                <Node ID="Scheduler" />
+              </Node>
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.PropertyBagData</OutputType>
+      </DataSourceModuleType>
+	  <ProbeActionModuleType ID="Sample.BaseMonitoring.CheckGreyedOutAgents.Probe" Accessibility="Internal" Batching="false" PassThrough="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="Debug" type="xsd:boolean" />
+          <xsd:element minOccurs="1" name="DebugFileName" type="xsd:string" />
+          <xsd:element minOccurs="1" name="LogSuccessEvent" type="xsd:boolean" />
+          <xsd:element minOccurs="1" name="TimeoutSeconds" type="xsd:integer" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="Debug" Selector="$Config/Debug$" ParameterType="bool" />
+          <OverrideableParameter ID="DebugFileName" Selector="$Config/DebugFileName$" ParameterType="string" />
+          <OverrideableParameter ID="LogSuccessEvent" Selector="$Config/LogSuccessEvent$" ParameterType="bool" />
+          <OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <ProbeAction ID="PSScript" TypeID="Windows!Microsoft.Windows.PowerShellPropertyBagTriggerOnlyProbe">
+                <ScriptName>CheckGreyedOutAgents.ps1</ScriptName>
+                <ScriptBody><![CDATA[ 
+#************************************************************************************************************
+# CheckGreyedOutAgents.ps1
+#
+# This checks which SCOM agents are greyed out and not in Maintenance Mode. If it finds some then it searches
+# for open Health Service Heartbeat Failure alerts. It creates an eventlog entry when it finds agents without
+# alerts.
+#
+# Usage:
+# powershell "&'.\CheckGreyedOutAgents.ps1'-debug True -debugFileName '<full path to debug log>' 
+#  -logSuccessEvent <True|False>"
+#
+# Example:
+# powershell "&'C:\Documents and Settings\Natascia\My Documents\test\CheckGreyedOutAgents.ps1'-debug True 
+#  -debugFileName 'C:\Documents and Settings\Jens\My Documents\test\CheckGreyedOutAgents.log' 
+#  -logSuccessEvent True"
+#
+# NH 2015
+#************************************************************************************************************
+param($Debug, $DebugFileName, $LogSuccessEvent);
+
+#$Debug = $True;
+#$DebugFileName = "c:\data\SCOM\Powershell\CheckGreyedOutAgents.log";
+#$LogSuccessEvent = $True;
+
+$MSFQDN = [System.Net.Dns]::GetHostEntry([System.Net.Dns]::GetHostName()).HostName;
+
+
+# constants
+$SCRIPT_NAME = "CheckGreyedOutAgents.ps1";
+$SCRIPT_VERSION = "1.0";
+
+# event constants
+$EVENT_TYPE_SUCCESS = 0
+$EVENT_TYPE_ERROR = 1
+$EVENT_TYPE_WARNING = 2
+$EVENT_TYPE_INFORMATION = 4
+
+$EVENT_ID_SUCCESS = 1000           # use IDs in the range 1 - 1000
+$EVENT_ID_Error = 997       # then you can use eventcreate.exe for testing
+$SERVER_MISSING_ERROR_HEADER = "Sample - Check Greyed Out Agents Script"
+
+# function for logging to stdout and log file simultaneously
+function Log($msg, $debug, $debugLog)
+{
+    write-host $msg;
+    # write to debug log if required
+    if ($debug -eq $true) 
+    {
+        $debugLog.writeline($msg);
+    }
+}
+
+# create debug file if required
+if ($debug -eq $true) 
+{
+  $debugLog = New-Object System.IO.StreamWriter($DebugFileName);
+}
+$currentuser = $env:userdomain + "\" + $env:username;
+$msg = "Script started -- " + (get-date).ToString() + "`r`nUsing security context: " + $currentuser;
+Log -msg $msg -debug $debug -debugLog $debugLog;
+
+$msg = "`r`nDebug = " + $debug + "`r`nDebug file name: " + $debugFileName + "`r`nLog success event: " + $logSuccessEvent
+Log -msg $msg -debug $debug -debugLog $debugLog;
+
+# create MOM Script API COM object 
+$api = New-Object -comObject "MOM.ScriptAPI"; 
+
+# Check if OperationsManager module is loaded
+If (Get-Module -Name "OperationsManager")
+{
+    $msg = "`r`nOperations Manager module already loaded";
+    Log -msg $msg -debug $debug -debugLog $debugLog;
+
+}
+else
+     {
+ try {
+ # Try to load the module
+ Import-Module -Name "OperationsManager"
+ } catch {
+ # Did not work, exit the script
+ $msg = "`r`nCould not load Operations Manager module! Exit script";
+ Log -msg $msg -debug $debug -debugLog $debugLog;
+ exit
+ }
+}
+# Module is loaded, connect to Management Group/Server
+$MGC = New-SCOMManagementGroupConnection -ComputerName $MSFQDN;
+
+$msg = "`r`nConnected to Management Group " + $MGC.ManagementGroup;
+Log -msg $msg -debug $debug -debugLog $debugLog;
+
+$TotalCount=0
+$list=""
+$agentclass = Get-SCOMClass -Name "Microsoft.SystemCenter.Agent"
+# Find greyed out agents which are not in maintenance mode
+$agentobjects = Get-SCOMMonitoringObject -Class:$agentclass | Where-Object {($_.IsAvailable -eq $false) -and ($_.InMaintenanceMode -eq $False)}
+if ($agentobjects -is [Object])
+{
+    $msg = "`r`nFound greyed out agents which are not in maintenance mode.";
+    Log -msg $msg -debug $debug -debugLog $debugLog;
+# Go through agent list
+foreach ($agent in $agentobjects) 
+{ 
+    $msg =  "`r`n"+ $agent.displayname
+    Log -msg $msg -debug $debug -debugLog $debugLog;
+    #Go on if watcher state for the agent is unhealthy
+    if((Get-SCOMClass -name "Microsoft.SystemCenter.HealthServiceWatcher"| get-scomclassinstance |  Where-Object {$_.Displayname -eq $agent.DisplayName}).HealthState -ne 'Success')
+    {
+        # Find open Health Service Heartbeat Failure alert for the agent
+        $alert=get-scomalert -name 'Health Service Heartbeat Failure' | where {($_.ResolutionState -ne 255) -and ($_.MonitoringObjectDisplayName -eq $agent.DisplayName)}
+        # No alert for greyed out agent found
+        if ($alert -isnot [Object])
+        {
+            $list+="`r`n"+$agent.displayname
+            $msg="`r`nThe agent "+ $agent.displayname + " has no open Health Service Heartbeat Failure alerts. Add to list."
+            Log -msg $msg -debug $debug -debugLog $debugLog;
+			$Totalcount++
+        }
+    }
+}
+}
+# Log success event if required
+if ($LogSuccessEvent -eq $true)
+{
+  $api.LogScriptEvent($SCRIPT_NAME + " " + $SCRIPT_VERSION, $EVENT_ID_SUCCESS, $EVENT_TYPE_INFORMATION, "Successfully executed the script.");
+}
+
+$msg = "`r`nScript finished -- " + (get-date).ToString() + "`r`n";
+Log -msg $msg -debug $debug -debugLog $debugLog;
+
+# close debug log if required
+if ($Debug -eq $true) 
+{
+  $debugLog.close();
+}		
+
+$Bag = $api.CreatePropertyBag()
+$Bag.AddValue("TotalCount", $TotalCount)
+$Bag.AddValue("List", $list)
+$Bag
+#$api.Return($Bag)
+]]>
+				</ScriptBody>
+                <Parameters>
+                  <Parameter>
+                    <Name>Debug</Name>
+                    <Value>$Config/Debug$</Value>
+                  </Parameter>
+                  <Parameter>
+                    <Name>DebugFileName</Name>
+                    <Value>$Config/DebugFileName$</Value>
+                  </Parameter>
+                  <Parameter>
+                    <Name>LogSuccessEvent</Name>
+                    <Value>$Config/LogSuccessEvent$</Value>
+                  </Parameter>
+                </Parameters>
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+              </ProbeAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="PSScript" />
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.PropertyBagData</OutputType>
+        <TriggerOnly>true</TriggerOnly>
+      </ProbeActionModuleType>
+    </ModuleTypes>
+  </TypeDefinitions>
+  <Monitoring>
+    <Rules>
+	  <Rule ID="Sample.BaseMonitoring.CheckGreyedOutAgents.Rule" Enabled="true" Target="SCLibrary!Microsoft.SystemCenter.AllManagementServersPool" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+        <Category>Alert</Category>
+        <DataSources>
+          <DataSource ID="DS" TypeID="Sample.BaseMonitoring.CheckGreyedOutAgents.DataSource">
+            <IntervalSeconds>300</IntervalSeconds>
+            <SyncTime/>
+            <Debug>false</Debug>
+			<DebugFileName>c:\it\opsmgr\CheckGreyedOutAgents.log</DebugFileName>
+			<LogSuccessEvent>true</LogSuccessEvent>
+            <TimeoutSeconds>180</TimeoutSeconds>
+          </DataSource>
+        </DataSources>
+        <ConditionDetection ID="CD" TypeID="System!System.ExpressionFilter">
+          <Expression>
+            <SimpleExpression>
+              <ValueExpression>
+                <XPathQuery Type="Integer">Property[@Name='TotalCount']</XPathQuery>
+              </ValueExpression>
+              <Operator>Greater</Operator>
+              <ValueExpression>
+                <Value Type="Integer">0</Value>
+              </ValueExpression>
+            </SimpleExpression>
+          </Expression>
+        </ConditionDetection>
+        <WriteActions>
+          <WriteAction ID="Alert" TypeID="SystemHealth!System.Health.GenerateAlert">
+            <Priority>1</Priority>
+            <Severity>2</Severity>
+            <AlertMessageId>$MPElement[Name="Sample.BaseMonitoring.CheckGreyedOutAgents.Rule.AlertMessage"]$</AlertMessageId>
+            <AlertParameters>
+              <AlertParameter1>$Data/Property[@Name='TotalCount']$</AlertParameter1>
+              <AlertParameter2>$Data/Property[@Name='List']$</AlertParameter2>
+            </AlertParameters>
+            <Suppression>
+              <SuppressionValue>$Data/Property[@Name='TotalCount']$</SuppressionValue>
+              <SuppressionValue>$Data/Property[@Name='List']$</SuppressionValue>
+            </Suppression>
+          </WriteAction>
+        </WriteActions>
+      </Rule>
+    </Rules>
+  </Monitoring>
+  <Presentation>
+    <StringResources>
+	  <StringResource ID="Sample.BaseMonitoring.CheckGreyedOutAgents.Rule.AlertMessage" />
+    </StringResources>
+  </Presentation>
+  <LanguagePacks>
+    <LanguagePack ID="ENU" IsDefault="true">
+      <DisplayStrings>
+        <DisplayString ElementID="Sample.BaseMonitoring">
+          <Name>Sample Base Monitoring MP</Name>
+          <Description>This MP controls the discoveries defined in public management packs.</Description>
+        </DisplayString>
+		<DisplayString ElementID="Sample.BaseMonitoring.CheckGreyedOutAgents.Probe">
+          <Name>Sample - Check Greyed Out Agents Probe</Name>
+          <Description>This Probe triggers a PowerShell script on the MS which checks if there are greyed out agents, which are not in maintenance mode and without health service heartbeat alerts.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.BaseMonitoring.CheckGreyedOutAgents.Rule.AlertMessage">
+          <Name>Sample - greyed out agents</Name>
+          <Description>The following agents are greyed out and have no open Health Service Heartbeat Failure alert. Please check:
+		  {1}</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.BaseMonitoring.CheckGreyedOutAgents.Rule">
+          <Name>Sample - Check Greyed Out Agents - Run PS Script</Name>
+          <Description>This rule triggers a PowerShell script on the MS which checks if there are greyed out agents, which are not in maintenance mode and without health service heartbeat alerts.</Description>
+        </DisplayString>
+        <DisplayString ElementID="Sample.BaseMonitoring.CheckGreyedOutAgents.DataSource">
+          <Name>Sample - Check Greyed Out Agents Write Action</Name>
+          <Description>This DataSource triggers a the CheckGreyedOutAgents probe.</Description>
+        </DisplayString>
+      </DisplayStrings>
+    </LanguagePack>
+  </LanguagePacks>
+</ManagementPack>
